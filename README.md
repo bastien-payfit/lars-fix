@@ -106,8 +106,95 @@ WHERE history.accountid is null;
 
 We find that 9 516 LARs are linked to accounts with no available history on their owners. Thorough readers will notice that 8 388 + 9 516 = 17 904, the total number of LARs left to fix.
 
+> "Dear Lord, isn't there anything we can do?"
+
+> "There might..."
+___
+Gauvain suggested that those 9 516 LARs had no owner changes recorded in accounthistory merely because the owner on the associated accounts had never changed since their creation.
+
+Consequently, on those LARs, the LAR owner would be the only owner there ever was on the associated account. If we're to validate this hypothesis, we must try it on **LARs that already have an owner but no owner change recorded in the account history of their associated account**. Switch back to the next query of `lars_to_fix_&_account_history.sql`. Let's break it down!
+
+1. First, we select lars that already have an owner:
+```sql
+WITH lars_w_owner AS (
+    SELECT
+        id,
+        account__c,
+        assignement_date__c,
+        end_relation_date__c,
+        owner_relation__c
+    FROM data.staging_salesforce.batchaccountrelation__c
+    WHERE
+        NOT isdeleted
+        AND owner_relation__c IS NOT NULL
+),
+```
+2. Then the account history of a change of owner:
+```sql
+history1 AS (
+    SELECT 
+        accountid, 
+        createddate, 
+        oldvalue__string, 
+        newvalue__string 
+    FROM staging_salesforce.accounthistory
+    WHERE 
+        field = 'Owner' 
+        and oldvalue__string <> newvalue__string
+        and oldvalue__string not like '0053X%'
+        and newvalue__string <> 'Outbound Database' 
+        and newvalue__string not like '%Reassignment%'
+),
+```
+3. Then LARs that have an owner but no owner changes recorded in their account history:
+```sql
+lars_w_owner_no_history AS (
+    SELECT 
+        lars_w_owner.id,
+        lars_w_owner.account__c,
+        lars_w_owner.owner_relation__c
+    FROM lars_w_owner
+    LEFT JOIN history1 
+        on lars_w_owner.account__c = history1.accountid
+    WHERE history1.accountid is null
+),
+```
+4. Then all the account history available (*we don't filter on owner changes anymore*, compare it to history1 if you're not sure):
+```sql
+history2 AS (
+    SELECT 
+        accountid, 
+        createddate, 
+        oldvalue__string, 
+        newvalue__string 
+    FROM staging_salesforce.accounthistory
+    WHERE 
+        field = 'Owner' 
+        and oldvalue__string not like '0053X%'
+)
+```
+5. Finally we join LARs with an owner and no owner changes recorded to the whole unfiltered account history:
+```sql
+SELECT
+    lars_w_owner_no_history.*,
+    history2.* 
+FROM lars_w_owner_no_history
+JOIN history2 
+ON lars_w_owner_no_history.account__c = history2.accountid
+;
+```
+And... **SUCCESS**! The LAR owners match the *oldvalue__string* of the accounthistory after the join 🎉 
+___
+Let's sum it up!
+
+In this scenario, for all 17 904 LARs to fix, there would be two distinct outcomes:
+- If we have owner changes recorded in the account history, then we use the method envisioned hitherto,
+- If not, we take the first recorded owner in the account history.
+
+In other words, the 8 388 LARs will be fixed with the first method, and the 9 516 others with the latter. Consequently, we have to make sure that all 9 516 LARs that *would be* fixed with the second method actually have a first owner recorded in *accounthistory*. Here we go 👇
+
 ### 5. Find missing owners
-Let's ignore the issues stated [above](#4.-Join-LARs-&-Account-History) for a moment and do as if we could find all the missing owners. Let's move on to `larOwners.sql` and execute its multiple queries.
+Let's ignore the issues stated [above](#4.-Join-LARs-&-Account-History) for a moment and do as if we could find all the missing owners. Let's move on to `lar_owners.sql` and execute its multiple queries.
 
 You will find this particular query interesting 👇
 ```sql
