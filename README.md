@@ -241,7 +241,7 @@ JOIN history
 
 We find that on all LARs that already have an owner (there are 34 135 of them), the LAR owner name matches the owner we found in account history in only 32 389 cases (that's still more than 90% - fair enough).
 
-To do that, we'd run this query 👇 (You'll notice that 72 LARs have been excluded in the long list at the end of the query - check [this message](https://payfit.slack.com/archives/C019JGWPHSR/p1619018500009500) on Slack if that makes no sense)
+Then, we'd run this query to make sure that - this time - there's only one owner on the assignment time frame of the LAR 👇 (You'll notice that 72 LARs have been excluded in the long list at the end of the query - check [this message](https://payfit.slack.com/archives/C019JGWPHSR/p1619018500009500) on Slack if that makes no sense)
 ```sql
 -- @block Nb owners per LAR to fix
 WITH lars_to_fix AS (
