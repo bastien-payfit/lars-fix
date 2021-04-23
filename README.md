@@ -11,22 +11,22 @@ Because Lucas and I made sure of it during previous LAR recovery sessions.
 
 # Walkthrough
 
-### 1. Lars to fix
+### **1. Lars to fix**
 Find LARs to fix by executing the queries in `lars_to_fix.sql`. _LARs to fix are those not in [backlog](#Vocabulary) with no owner_.
 
-### 2. Counts
+### **2. Counts**
 Execute the queries in `counts.sql` to grasp the volumes we're dealing with and how many lars we have to fix. You'll find the following:
 - **Total number of LARs**: 79 796
 - **Number of LARs not in backlog**: 71 552
 - **Number of LARs in backlog**: 8 244
 - **Number of LARs to fix**: 17 904
 
-### 3. Account history
+### **3. Account history**
 To find missing owners, we thought about using `accounthistory`. Meaning that, for a given LAR, active on a given time frame, we want to find the owner of the account linked to the LAR on the given time frame.
 
 First, look at the account history by executing queries in `account_history.sql`. You'll notice that we excluded changes that did not occur on the *owner* field, and changes to 'Outbound database' or any 'Reassignment Pools' (because these changes do not alter the owner of the LAR).
 
-### 4. Join LARs & Account History
+### **4. Join LARs & Account History**
 If we want to find missing LAR owners, we have to join LARs and Account History and we should have as many LARs to fix (17 904) even after the join with the account history. Unfortunately, that's not the case...
 
 When we execute this query 👇 in `lars_to_fix_&_account_history.sql` we find only 8 388 LARs to fix.
@@ -109,12 +109,15 @@ We find that 9 516 LARs are linked to accounts with no available history on thei
 > "Dear Lord, isn't there anything we can do?"
 
 > "There might..."
+
 ___
 Gauvain suggested that those 9 516 LARs had no owner changes recorded in accounthistory merely because the owner on the associated accounts had never changed since their creation.
 
-Consequently, on those LARs, the LAR owner would be the only owner there ever was on the associated account. If we're to validate this hypothesis, we must try it on **LARs that already have an owner but no owner change recorded in the account history of their associated account**. Switch back to the next query of `lars_to_fix_&_account_history.sql`. Let's break it down!
+Consequently, on those LARs, the LAR owner would be the only owner there ever was on the associated account. If we're to validate this hypothesis, we must try it on **LARs that already have an owner but no owner change recorded in the account history of their associated account**. 
 
-1. First, we select lars that already have an owner:
+Therefore, switch back to the next query of `lars_to_fix_&_account_history.sql` - let's break it down!
+
+1. First, we select LARs that already have an owner:
 ```sql
 WITH lars_w_owner AS (
     SELECT
@@ -173,7 +176,7 @@ history2 AS (
         and oldvalue__string not like '0053X%'
 )
 ```
-5. Finally we join LARs with an owner and no owner changes recorded to the whole unfiltered account history:
+5. Finally we join LARs with an owner, and no owner changes recorded, to the whole unfiltered account history:
 ```sql
 SELECT
     lars_w_owner_no_history.*,
@@ -183,7 +186,7 @@ JOIN history2
 ON lars_w_owner_no_history.account__c = history2.accountid
 ;
 ```
-And... **SUCCESS**! The LAR owners match the *oldvalue__string* of the accounthistory after the join 🎉 
+And... **HURRAY**! The LAR owners match the *oldvalue__string* of the accounthistory after the join 🎉 Run the query and see for yourself!
 ___
 Let's sum it up!
 
@@ -191,10 +194,10 @@ In this scenario, for all 17 904 LARs to fix, there would be two distinct outcom
 - If we have owner changes recorded in the account history, then we use the method envisioned hitherto,
 - If not, we take the first recorded owner in the account history.
 
-In other words, the 8 388 LARs will be fixed with the first method, and the 9 516 others with the latter. Consequently, we have to make sure that all 9 516 LARs that *would be* fixed with the second method actually have a first owner recorded in *accounthistory*. Here we go 👇
+In other words, the 8 388 LARs will be fixed with the first method, and the 9 516 others with the latter. Consequently, we have to make sure that all 9 516 LARs that *would be* fixed with the second method actually have a first owner recorded in *accounthistory*. 
 
-### 5. Find missing owners
-Let's ignore the issues stated [above](#4.-Join-LARs-&-Account-History) for a moment and do as if we could find all the missing owners. Let's move on to `lar_owners.sql` and execute its multiple queries.
+### **5. Finding owners that have owner changes recorded**
+Let's move on to `lar_owners.sql` and execute its multiple queries.
 
 You will find this particular query interesting 👇
 ```sql
@@ -237,8 +240,6 @@ JOIN history
 ```
 
 We find that on all LARs that already have an owner (there are 34 135 of them), the LAR owner name matches the owner we found in account history in only 32 389 cases (that's still more than 90% - fair enough).
-
-Recovering owner names thanks to the account history was never anything more than a hypothesis (that needed validation). Let's assume that the 90% success rate on LARs that already have an owner is enough to validate this hypothesis. Let's now pretend to carry on and try to to recover LARs **missing owner names**.
 
 To do that, we'd run this query 👇 (You'll notice that 72 LARs have been excluded in the long list at the end of the query - check [this message](https://payfit.slack.com/archives/C019JGWPHSR/p1619018500009500) on Slack if that makes no sense)
 ```sql
@@ -336,18 +337,88 @@ SELECT
 FROM nb_owners;
 ```
 Among LARs that need a fix on their owner:
-- We found a single owner on the time frame for **6323** of them,
-- We found two owners on the time frame for **596** of them,
-- We found a three owners on the time frame for **61** of them,
-- And finally, we found more than three owners for **19** of them.
+- We find a single owner on the time frame for **6323** of them,
+- We find two owners on the time frame for **596** of them,
+- We find a three owners on the time frame for **61** of them,
+- And finally, we find more than three owners for **19** of them.
+
+**That's not enough**
 
 At this point, one should ask:
 > Is there still something going on with end_relation_dates?
 
-We were supposed to fix them with Lucas but I guess now is time to double check.
+We were supposed to fix them with Lucas but I guess we'll have to double check (see this [this section](7.-Do-we-have-all-the-end-relation-dates-we-need?)).
 
-### 6. Do we have all the end relation dates we need?
-Let's move on to `end_relation_dates.sql`and its queries. First, we find 20 lars for which we found more than 2 owners in the accounthistory 👇
+### **6. Finding owners when no owner changes recorded**
+
+Let's ignore the end_relation_date issue for the moment and move on to the last request of `lar_owners.sql` 👇
+
+You'll note that LARs to fix (with no owner) with no history are all encompassed in the first temporary table:
+
+```sql
+-- @block Can we find missing owners in unfiltered account history when no owner changes recorded
+WITH lars_to_fix AS (
+    SELECT
+        id,
+        account__c,
+        assignement_date__c,
+        end_relation_date__c,
+        owner_relation__c
+    FROM data.staging_salesforce.batchaccountrelation__c
+    WHERE
+        NOT isdeleted
+        AND assignement_date__c IS NOT NULL
+        AND owner_relation__c IS NULL
+),
+history1 AS (
+    SELECT 
+        accountid, 
+        createddate, 
+        oldvalue__string, 
+        newvalue__string 
+    FROM staging_salesforce.accounthistory
+    WHERE 
+        field = 'Owner' 
+        and oldvalue__string <> newvalue__string
+        and oldvalue__string not like '0053X%'
+        and newvalue__string <> 'Outbound Database' 
+        and newvalue__string not like '%Reassignment%'
+),
+lars_to_fix_no_history AS (
+    SELECT 
+        lars_to_fix.id,
+        lars_to_fix.account__c,
+        lars_to_fix.owner_relation__c
+    FROM lars_to_fix
+    LEFT JOIN history1 
+        on lars_to_fix.account__c = history1.accountid
+    WHERE history1.accountid is null
+),
+history2 AS (
+    SELECT 
+        accountid, 
+        createddate, 
+        oldvalue__string, 
+        newvalue__string 
+    FROM staging_salesforce.accounthistory
+    WHERE 
+        field = 'Owner' 
+        and oldvalue__string not like '0053X%'
+)
+SELECT
+    count(distinct lars_to_fix_no_history.id)
+FROM lars_to_fix_no_history
+JOIN history2 
+ON lars_to_fix_no_history.account__c = history2.accountid
+;
+```
+
+We find an owner for only 6 747 of the 9 516 remaining LARs. Unfortunately,
+
+**that's not enough**
+
+### 7. Do we have all the end relation dates we need?
+It's time to roll back to the end_relation_date issue. Go to `end_relation_dates.sql` and its queries. First, we find 20 lars for which we found more than 2 owners in the accounthistory 👇
 ```sql
 -- @block Find a few lar ids for which we discovered more than two owners.
 WITH lars_to_fix AS (
@@ -388,7 +459,7 @@ ORDER BY assignement_date__c DESC;
 # Conclusion
 
 We still can't recover the missing LAR owner names because:
-1. Among the 17 904 LARs to fix, only 8 388 of them have an account history ([cf. section 4](4.-Join-LARs-&-Account-History))
-2. Among these, some still don't have end relation dates when they should ([cf.  previous section](6.-Do-we-have-all-the-end-relation-dates-we-need?))
+1. Among the 17 904 LARs to fix, only 8 388 of them have an account history ([cf. section 4](4.-Join-LARs-&-Account-History)) and among the remaining 9 516, only 6 747 have a first owner we can recover. That's 2.5K+ we can't account for.
+2. Among the 8 388, some still don't have end relation dates when they should ([cf.  previous section](6.-Do-we-have-all-the-end-relation-dates-we-need?))
 
-We can fix 2. if need be but I don't see how we can put up with 1: even if we fixed the 8 388 LARs we have, that would make little sense in a dashboard.
+We can fix 2. if need be but I don't see yet how we can put up with 1.
