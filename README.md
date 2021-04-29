@@ -460,10 +460,7 @@ ORDER BY assignement_date__c DESC;
 
 > Lucas and I did not manage to recover every end relation dates after all...
 
-# Conclusion
+# Key findings
 
-We still can't recover the missing LAR owner names because:
-1. Among the 17 904 LARs to fix, only 8 388 of them have an account history ([cf. section 4](4.-Join-LARs-&-Account-History)) and among the remaining 9 516, only 6 747 have a first owner we can recover. That's 2.5K+ we can't account for.
+1. Among the 17 904 LARs to fix, only 8 388 of them have an account history ([cf. section 4](4.-Join-LARs-&-Account-History)) and among the remaining 9 516, only 4 872 have a first owner we can recover. That's 4.5K+ we can't account for.
 2. Among the 8 388, some still don't have end relation dates when they should ([cf.  previous section](6.-Do-we-have-all-the-end-relation-dates-we-need?))
-
-We can fix 2. if need be but I don't see yet how we can put up with 1.
