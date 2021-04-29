@@ -1,4 +1,4 @@
--- @block Get LARs to fix
+-- @block Get LARs to fix with owner change in history
 WITH lars_to_fix AS (
     SELECT
         id,
@@ -43,3 +43,63 @@ SELECT
     lar_id
 FROM nb_owners
 WHERE nb_assignments=1;
+
+-- @block Fix lar owners with no owner change recorded
+WITH lars_to_fix AS (
+    SELECT
+        id,
+        account__c,
+        assignement_date__c,
+        end_relation_date__c,
+        owner_relation__c
+    FROM data.staging_salesforce.batchaccountrelation__c
+    WHERE
+        NOT isdeleted
+        AND assignement_date__c IS NOT NULL
+        AND owner_relation__c IS NULL
+),
+history1 AS (
+    SELECT 
+        accountid, 
+        createddate, 
+        oldvalue__string, 
+        newvalue__string 
+    FROM staging_salesforce.accounthistory
+    WHERE 
+        field = 'Owner' 
+        and oldvalue__string <> newvalue__string
+        and oldvalue__string not like '0053X%'
+        and newvalue__string <> 'Outbound Database' 
+        and newvalue__string not like '%Reassignment%'
+),
+lars_to_fix_no_history AS (
+    SELECT 
+        distinct lars_to_fix.id,
+        lars_to_fix.account__c
+    FROM lars_to_fix
+    LEFT JOIN history1 
+        on lars_to_fix.account__c = history1.accountid
+    WHERE history1.accountid is null
+),
+history2 AS (
+    SELECT 
+        accountid, 
+        createddate, 
+        oldvalue__string, 
+        newvalue__string 
+    FROM staging_salesforce.accounthistory
+    WHERE 
+        field = 'Owner' 
+        and oldvalue__string not like '0053X%'
+        and oldvalue__string <> 'Outbound Database' 
+        and oldvalue__string not like '%Reassignment%'
+)
+SELECT
+    lars_to_fix_no_history.id,
+    history2.oldvalue__string,
+    u.id as owner_id
+FROM lars_to_fix_no_history
+JOIN history2 
+    on lars_to_fix_no_history.account__c = history2.accountid
+LEFT JOIN staging_salesforce.user u
+    on history2.oldvalue__string = u."name" and u.isactive;
