@@ -406,6 +406,8 @@ history2 AS (
     WHERE 
         field = 'Owner' 
         and oldvalue__string not like '0053X%'
+        and oldvalue__string <> 'Outbound Database' 
+        and oldvalue__string not like '%Reassignment%'
 )
 SELECT
     count(distinct lars_to_fix_no_history.id)
@@ -415,7 +417,7 @@ ON lars_to_fix_no_history.account__c = history2.accountid
 ;
 ```
 
-We find an owner for only 6 747 of the 9 516 remaining LARs. Unfortunately,
+We find an owner for only 4 872 of the 9 516 remaining LARs. In an ideal world,
 
 **that's not enough**
 

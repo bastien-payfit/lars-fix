@@ -211,6 +211,8 @@ history2 AS (
     WHERE 
         field = 'Owner' 
         and oldvalue__string not like '0053X%'
+        and oldvalue__string <> 'Outbound Database' 
+        and oldvalue__string not like '%Reassignment%'
 )
 SELECT
     count(distinct lars_to_fix_no_history.id)
