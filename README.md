@@ -464,3 +464,7 @@ ORDER BY assignement_date__c DESC;
 
 1. Among the 17 904 LARs to fix, only 8 388 of them have an account history ([cf. section 4](4.-Join-LARs-&-Account-History)) and among the remaining 9 516, only 4 872 have a first owner we can recover. That's 4.5K+ we can't account for.
 2. Among the 8 388, some still don't have end relation dates when they should ([cf.  previous section](6.-Do-we-have-all-the-end-relation-dates-we-need?))
+
+# Final Results
+### Actions
+1. Lucas and I recovered **all** end relation dates. There's a series of queries in `fix_end_relation_dates.sql` 👉 we proceeded on a few extra steps in GSheet that provides a better UI than mere sql requests. [Here's the document](https://docs.google.com/spreadsheets/d/1GJt3Q4QNuSGhMAPgw6mfu8Qq7b-W3NIvXdwKK1U19yk/edit#gid=150558237) with updated LARs' end relation dates.
