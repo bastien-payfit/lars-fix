@@ -174,6 +174,8 @@ history2 AS (
     WHERE 
         field = 'Owner' 
         and oldvalue__string not like '0053X%'
+        and oldvalue__string <> 'Outbound Database' 
+        and oldvalue__string not like '%Reassignment%'
 )
 ```
 5. Finally we join LARs with an owner, and no owner changes recorded, to the whole unfiltered account history:

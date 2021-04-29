@@ -115,8 +115,8 @@ history2 AS (
     WHERE 
         field = 'Owner' 
         and oldvalue__string not like '0053X%'
-        --and newvalue__string <> 'Outbound Database' 
-        --and newvalue__string not like '%Reassignment%'
+        and oldvalue__string <> 'Outbound Database' 
+        and oldvalue__string not like '%Reassignment%'
 )
 SELECT
     lars_w_owner_no_history.*,
