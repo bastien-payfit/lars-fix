@@ -103,3 +103,4 @@ JOIN history2
     on lars_to_fix_no_history.account__c = history2.accountid
 LEFT JOIN staging_salesforce.user u
     on history2.oldvalue__string = u."name" and u.isactive;
+
