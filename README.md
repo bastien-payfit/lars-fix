@@ -9,6 +9,10 @@ Because Lucas and I made sure of it during previous LAR recovery sessions.
 # Vocabulary
 - **backlog**: LARs waiting for an assignment. Those LARs are characterized by the absence of owner AND assignment date on their record (simultaneously).
 
+___
+>If you're already bored and in a for-the-love-of-god-what-did-you-guys-actually-do mood, then jump to [this part](#Final-Results).
+
+
 # Walkthrough
 
 ### **1. Lars to fix**
@@ -466,5 +470,5 @@ ORDER BY assignement_date__c DESC;
 2. Among the 8 388, some still don't have end relation dates when they should ([cf.  previous section](6.-Do-we-have-all-the-end-relation-dates-we-need?))
 
 # Final Results
-### Actions
 1. Lucas and I recovered **all** end relation dates. There's a series of queries in `fix_end_relation_dates.sql` 👉 we proceeded on a few extra steps in GSheet that provides a better UI than mere sql requests. [Here's the document](https://docs.google.com/spreadsheets/d/1GJt3Q4QNuSGhMAPgw6mfu8Qq7b-W3NIvXdwKK1U19yk/edit#gid=150558237) with updated LARs' end relation dates.
+2. Then, we fixed all LARs with recorded owner changes. Among the 8 388 in total, **we could fix only 6 451** because others still had multiple owner possibilities, even after the end relation date fix. [Here's the final document](https://docs.google.com/spreadsheets/d/1FJIPSPy-fnwKtHAAqse3GMzgGc5UspaxjBdIJShWr5c/edit#gid=61716283).
